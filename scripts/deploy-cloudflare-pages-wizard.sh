@@ -205,7 +205,9 @@ require_https_origin API_ORIGIN "$API_ORIGIN"
 write_env API_ORIGIN "$API_ORIGIN"
 chmod 600 "$ENV_FILE"
 say "Waking and checking Render; a free instance may need about a minute."
-curl --retry 6 --retry-delay 10 --retry-all-errors --max-time 180 --fail --silent --show-error "$API_ORIGIN/health/ready"
+health_body=$(curl --retry 6 --retry-delay 10 --retry-all-errors --max-time 180 --fail --silent --show-error "$API_ORIGIN/health/ready")
+if [[ "$health_body" != *'"status":"ready"'* ]]; then warn "Render readiness check returned an unexpected response."; exit 1; fi
+printf '%s' "$health_body"
 printf '\n'
 
 stage "Create the Workers project"
@@ -227,7 +229,7 @@ pause "Press Enter after starting the first deployment."
 stage "Configure the Worker proxy"
 say "API_ORIGIN is a plain runtime value, not a secret; it contains no credentials."
 step "Open the Worker project → Settings → Variables and Secrets → Add."
-step "Add API_ORIGIN with the exact value below for both Production and Preview:"
+step "Add API_ORIGIN as a Worker runtime variable (not a Builds variable) with the exact value below:"
 say "$API_ORIGIN"
 step "Confirm VITE_API_URL=/v1 and NODE_VERSION=22.13.1 are also set for Production and Preview."
 step "Save, then Deployments → Retry deployment so both the build and Worker receive the values."
@@ -241,7 +243,9 @@ require_https_origin ADMIN_ORIGIN "$ADMIN_ORIGIN"
 write_env ADMIN_ORIGIN "$ADMIN_ORIGIN"
 say "Checking the static dashboard and the same-origin backend proxy."
 curl --retry 3 --retry-delay 3 --fail --silent --show-error "$ADMIN_ORIGIN" >/dev/null
-curl --retry 6 --retry-delay 10 --retry-all-errors --max-time 180 --fail --silent --show-error "$ADMIN_ORIGIN/v1/health/live"
+health_body=$(curl --retry 6 --retry-delay 10 --retry-all-errors --max-time 180 --fail --silent --show-error "$ADMIN_ORIGIN/v1/health/live")
+if [[ "$health_body" != *'"status":"ok"'* ]]; then warn "The /v1 proxy did not return backend health JSON. Check the Worker runtime API_ORIGIN variable."; exit 1; fi
+printf '%s' "$health_body"
 printf '\n'
 
 stage "Authorize the Cloudflare origin in Render"
@@ -254,7 +258,9 @@ pause "Press Enter after the Render deployment reports Live."
 
 stage "Acceptance check"
 say "The proxy should now support secure cookies, CSRF, uploads, and authenticated admin requests."
-curl --retry 6 --retry-delay 10 --retry-all-errors --max-time 180 --fail --silent --show-error "$ADMIN_ORIGIN/v1/health/ready"
+health_body=$(curl --retry 6 --retry-delay 10 --retry-all-errors --max-time 180 --fail --silent --show-error "$ADMIN_ORIGIN/v1/health/ready")
+if [[ "$health_body" != *'"status":"ready"'* ]]; then warn "The proxied backend is not ready."; exit 1; fi
+printf '%s' "$health_body"
 printf '\n'
 open_url "$ADMIN_ORIGIN"
 step "Sign in with the Owner account."
