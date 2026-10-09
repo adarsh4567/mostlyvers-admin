@@ -8,6 +8,7 @@ describe('Cloudflare Worker deployment', () => {
     expect(config.assets.directory).toBe('./dist');
     expect(config.assets.not_found_handling).toBe('single-page-application');
     expect(config.assets.run_worker_first).toContain('/v1/*');
+    expect(config.vars.API_ORIGIN).toBe('https://mostlyvers-api.onrender.com');
   });
 
   it('forwards POST bodies and methods to the Render API', async () => {
