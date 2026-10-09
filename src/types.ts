@@ -40,7 +40,7 @@ export interface Feedback {
 export interface DashboardData {
   metrics: { totalBooks: number; publishedBooks: number; upcomingBooks: number; totalReaders: number; totalPurchases: number; totalRevenue: Money; deviceChanges: number; newFeedback: number };
   salesSeries: Array<{ label: string; revenueMinor: number }>;
-  topBooks: Array<{ id: string; title: string; coverUrl: string; purchases: number; revenue: Money }>;
+  topBooks: Array<{ id: string; title: string; coverUrl: string; purchases: number; price: Money; revenue: Money }>;
   recentTransactions: Transaction[]; recentFeedback: Feedback[];
 }
 

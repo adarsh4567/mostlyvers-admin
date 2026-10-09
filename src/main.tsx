@@ -10,7 +10,7 @@ import './styles.css';
 import App from './App';
 import { AuthProvider } from './auth/AuthContext';
 
-const queryClient = new QueryClient({ defaultOptions: { queries: { staleTime: 30_000, retry: 1, refetchOnWindowFocus: false }, mutations: { retry: 0 } } });
+const queryClient = new QueryClient({ defaultOptions: { queries: { staleTime: 10_000, retry: 1, refetchOnMount: 'always', refetchOnWindowFocus: true }, mutations: { retry: 0 } } });
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode><QueryClientProvider client={queryClient}><AuthProvider><App /></AuthProvider></QueryClientProvider></React.StrictMode>,
