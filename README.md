@@ -13,25 +13,25 @@ Development always connects to the real backend. Visit `http://localhost:5174` a
 
 ## Real API
 
-For local development set `VITE_API_URL=http://localhost:5001/v1`. For Cloudflare Pages configure:
+For local development set `VITE_API_URL=http://localhost:5001/v1`. For Cloudflare Workers configure:
 
 ```env
 VITE_API_URL=/v1
 ```
 
-Set the Pages Function variable `API_ORIGIN` to the Render origin without `/v1`. The same-origin proxy preserves Secure HttpOnly refresh cookies and CSRF protection. Images upload through the API to Cloudinary; EPUBs upload directly to private Supabase Storage through its S3-compatible signed multipart interface.
+Set the Worker runtime variable `API_ORIGIN` to the Render origin without `/v1`. The same-origin proxy preserves Secure HttpOnly refresh cookies and CSRF protection. Images upload through the API to Cloudinary; EPUBs upload directly to private Supabase Storage through its S3-compatible signed multipart interface.
 
-Cloudflare Pages deployment settings:
+Cloudflare Workers deployment settings:
 
 ```text
 Production branch: main
 Build command: npm run build
-Build output directory: dist
+Deploy command: npx wrangler deploy
 Build variable: VITE_API_URL=/v1
-Pages Function variable: API_ORIGIN=https://<your-render-service>.onrender.com
+Worker runtime variable: API_ORIGIN=https://<your-render-service>.onrender.com
 ```
 
-The repository intentionally does not commit a production Wrangler binding: Cloudflare treats such a file as configuration source-of-truth, and a local `API_ORIGIN` must never override the dashboard's deployed value.
+`wrangler.json` sends `/v1/*` through the Worker before the SPA asset fallback. It sets `keep_vars` so deployments preserve `API_ORIGIN`, which remains configured only in Cloudflare and is not committed.
 
 For the guided production setup, run:
 

@@ -195,10 +195,10 @@ require_https_origin() {
   fi
 }
 
-banner "MOSTLYVERS admin · Cloudflare Pages"
+banner "MOSTLYVERS admin · Cloudflare Workers"
 
 stage "Verify the Render backend"
-say "The Pages Function will proxy /v1 requests to this Render service."
+say "The Cloudflare Worker will proxy /v1 requests to this Render service."
 ask API_ORIGIN "Render origin (example: https://mostlyvers-api.onrender.com):"
 API_ORIGIN="${API_ORIGIN%/}"
 require_https_origin API_ORIGIN "$API_ORIGIN"
@@ -208,35 +208,34 @@ say "Waking and checking Render; a free instance may need about a minute."
 curl --retry 6 --retry-delay 10 --retry-all-errors --max-time 180 --fail --silent --show-error "$API_ORIGIN/health/ready"
 printf '\n'
 
-stage "Create the Pages project"
+stage "Create the Workers project"
 open_url "https://dash.cloudflare.com/"
-step "Open Workers & Pages → Create application → Pages → Import an existing Git repository."
+step "Open Workers & Pages → Create application → Import an existing Git repository."
 step "Connect GitHub if requested, then select adarsh4567/mostlyvers-admin."
 step "Choose project name mostlyvers-admin and production branch main."
 pause "Press Enter when you reach Set up builds and deployments."
 
 stage "Configure the Vite build"
-step "Framework preset: React (Vite), or leave the preset unset."
 step "Build command: npm run build"
-step "Build output directory: dist"
+step "Deploy command: npx wrangler deploy"
 step "Root directory: leave blank"
 step "Add production build variable VITE_API_URL with value /v1."
 step "Add NODE_VERSION with value 22.13.1."
 step "If variables are unavailable on this screen, deploy once, add them under Settings, then retry the deployment."
 pause "Press Enter after starting the first deployment."
 
-stage "Configure the Pages Function proxy"
+stage "Configure the Worker proxy"
 say "API_ORIGIN is a plain runtime value, not a secret; it contains no credentials."
-step "Open the Pages project → Settings → Variables and Secrets → Add."
+step "Open the Worker project → Settings → Variables and Secrets → Add."
 step "Add API_ORIGIN with the exact value below for both Production and Preview:"
 say "$API_ORIGIN"
 step "Confirm VITE_API_URL=/v1 and NODE_VERSION=22.13.1 are also set for Production and Preview."
-step "Save, then Deployments → Retry deployment so both build and Function receive the values."
+step "Save, then Deployments → Retry deployment so both the build and Worker receive the values."
 pause "Press Enter after the new deployment succeeds."
 
 stage "Capture and verify the admin origin"
-step "Open the successful production deployment and copy its primary https://PROJECT.pages.dev URL."
-ask ADMIN_ORIGIN "Cloudflare Pages origin:"
+step "Open the successful production deployment and copy its primary https://PROJECT.SUBDOMAIN.workers.dev URL."
+ask ADMIN_ORIGIN "Cloudflare admin origin (include https://):"
 ADMIN_ORIGIN="${ADMIN_ORIGIN%/}"
 require_https_origin ADMIN_ORIGIN "$ADMIN_ORIGIN"
 write_env ADMIN_ORIGIN "$ADMIN_ORIGIN"
@@ -245,7 +244,7 @@ curl --retry 3 --retry-delay 3 --fail --silent --show-error "$ADMIN_ORIGIN" >/de
 curl --retry 6 --retry-delay 10 --retry-all-errors --max-time 180 --fail --silent --show-error "$ADMIN_ORIGIN/v1/health/live"
 printf '\n'
 
-stage "Authorize the Pages origin in Render"
+stage "Authorize the Cloudflare origin in Render"
 open_url "https://dashboard.render.com/"
 step "Open mostlyvers-api → Environment."
 step "Replace ADMIN_ORIGIN=https://bootstrap.invalid with the exact value below:"
