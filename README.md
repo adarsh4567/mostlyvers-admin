@@ -33,6 +33,12 @@ Pages Function variable: API_ORIGIN=https://<your-render-service>.onrender.com
 
 The repository intentionally does not commit a production Wrangler binding: Cloudflare treats such a file as configuration source-of-truth, and a local `API_ORIGIN` must never override the dashboard's deployed value.
 
+For the guided production setup, run:
+
+```bash
+./scripts/deploy-cloudflare-pages-wizard.sh
+```
+
 ## Verification
 
 ```bash
