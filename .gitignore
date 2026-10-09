@@ -1,0 +1,14 @@
+node_modules
+dist
+.env
+.env.local
+.env.*
+!.env.example
+*.pem
+*.key
+*service-account*.json
+credentials*.json
+playwright-report
+test-results
+coverage
+*.tsbuildinfo

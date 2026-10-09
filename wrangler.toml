@@ -1,0 +1,7 @@
+name = "mostlyvers-admin"
+compatibility_date = "2026-09-01"
+pages_build_output_dir = "dist"
+
+[vars]
+# Override in Cloudflare Pages production variables.
+API_ORIGIN = "http://localhost:5001"

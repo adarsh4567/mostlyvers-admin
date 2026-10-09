@@ -1,0 +1,20 @@
+import { useState } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { ExternalLink, Music2, Plus, QrCode, Trash2 } from 'lucide-react';
+import { adminApi } from '../api/client';
+import type { Book, CursorPage } from '../types';
+import { Card, Empty, ErrorState, Loading, Modal, PageHeader, Status } from '../components/Ui';
+
+type Asset = { bookId: string; title: string; coverUrl: string; songName: string; youtubeUrl: string; qrStatus: string };
+export const validYoutube = (value: string) => { try { const url = new URL(value); return url.protocol === 'https:' && ['youtube.com', 'www.youtube.com', 'youtu.be', 'm.youtube.com'].includes(url.hostname); } catch { return false; } };
+export function SongsPage() {
+  const client = useQueryClient(); const [editing, setEditing] = useState<{ bookId: string; songName: string; youtubeUrl: string } | null>(null); const [error, setError] = useState('');
+  const assets = useQuery({ queryKey: ['youtube-assets'], queryFn: () => adminApi.get<CursorPage<Asset>>('/admin/youtube-assets') });
+  const books = useQuery({ queryKey: ['books', 'all-for-qr'], queryFn: () => adminApi.get<CursorPage<Book>>('/admin/books') });
+  const save = useMutation({ mutationFn: () => adminApi.put(`/admin/books/${editing!.bookId}/youtube-asset`, { songName: editing!.songName, youtubeUrl: editing!.youtubeUrl }), onSuccess: () => { client.invalidateQueries({ queryKey: ['youtube-assets'] }); setEditing(null); } });
+  const remove = useMutation({ mutationFn: (bookId: string) => adminApi.delete(`/admin/books/${bookId}/youtube-asset`), onSuccess: () => client.invalidateQueries({ queryKey: ['youtube-assets'] }) });
+  if (assets.isPending || books.isPending) return <Loading />; if (assets.isError || books.isError) return <ErrorState error={assets.error || books.error} />;
+  return <><PageHeader title="Songs & QR" subtitle="Manage entitlement-protected YouTube songs and their book associations." action={<button className="btn btn-primary" onClick={() => setEditing({ bookId: books.data.items[0]?.id || '', songName: '', youtubeUrl: '' })}><Plus size={16}/> ADD YOUTUBE VIDEO</button>} />{assets.data.items.length ? <div className="asset-grid">{assets.data.items.map(asset => <Card className="asset-card" key={asset.bookId}><img src={asset.coverUrl}/><div><Music2/><h2>{asset.title}</h2><strong>{asset.songName}</strong><a href={asset.youtubeUrl} target="_blank" rel="noreferrer">{asset.youtubeUrl}<ExternalLink size={13}/></a><Status value={asset.qrStatus}/><div className="asset-actions"><button className="btn btn-small btn-outline" onClick={() => setEditing(asset)}>EDIT</button><button className="icon-btn danger" onClick={() => remove.mutate(asset.bookId)} title="Remove YouTube association"><Trash2 size={16}/></button></div></div><div className="qr-preview"><QrCode/><span>Protected QR</span></div></Card>)}</div> : <Empty message="No YouTube videos are associated with books." />}
+    {editing && <Modal title={editing.songName ? 'Edit YouTube Video' : 'Add YouTube Video'} onClose={() => setEditing(null)}><div className="form-grid"><label className="field wide"><span>Book</span><select value={editing.bookId} onChange={event => setEditing({ ...editing, bookId: event.target.value })}>{books.data.items.map(book => <option value={book.id} key={book.id}>{book.title}</option>)}</select></label><label className="field wide"><span>Song / Video Name</span><input value={editing.songName} onChange={event => setEditing({ ...editing, songName: event.target.value })}/></label><label className="field wide"><span>YouTube URL</span><input type="url" value={editing.youtubeUrl} onChange={event => setEditing({ ...editing, youtubeUrl: event.target.value })}/></label></div>{error && <div className="form-error">{error}</div>}<div className="dialog-actions"><button className="btn btn-outline" onClick={() => setEditing(null)}>CANCEL</button><button className="btn btn-primary" onClick={() => { if (!validYoutube(editing.youtubeUrl)) return setError('Enter an HTTPS YouTube URL.'); setError(''); save.mutate(); }}>SAVE ASSOCIATION</button></div></Modal>}
+  </>;
+}
