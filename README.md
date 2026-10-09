@@ -19,7 +19,19 @@ For local development set `VITE_API_URL=http://localhost:5001/v1`. For Cloudflar
 VITE_API_URL=/v1
 ```
 
-Set the Pages Function variable `API_ORIGIN` to the Render origin without `/v1`. The same-origin proxy preserves Secure HttpOnly refresh cookies and CSRF protection. Images upload through the API to Cloudinary; EPUBs upload directly to private R2 using short-lived signed parts.
+Set the Pages Function variable `API_ORIGIN` to the Render origin without `/v1`. The same-origin proxy preserves Secure HttpOnly refresh cookies and CSRF protection. Images upload through the API to Cloudinary; EPUBs upload directly to private Supabase Storage through its S3-compatible signed multipart interface.
+
+Cloudflare Pages deployment settings:
+
+```text
+Production branch: main
+Build command: npm run build
+Build output directory: dist
+Build variable: VITE_API_URL=/v1
+Pages Function variable: API_ORIGIN=https://<your-render-service>.onrender.com
+```
+
+The repository intentionally does not commit a production Wrangler binding: Cloudflare treats such a file as configuration source-of-truth, and a local `API_ORIGIN` must never override the dashboard's deployed value.
 
 ## Verification
 
