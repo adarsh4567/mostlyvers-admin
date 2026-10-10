@@ -1,6 +1,6 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import type { Book } from '../types';
-import { toAdminBookInput } from './books';
+import { saveThenPublishBook, toAdminBookInput } from './books';
 
 describe('toAdminBookInput', () => {
   it('removes read-only dashboard fields rejected by the backend decoder', () => {
@@ -38,5 +38,37 @@ describe('toAdminBookInput', () => {
       coverUploadRef: 'cover-upload',
       contentUploadRef: 'epub-upload',
     });
+  });
+});
+
+describe('saveThenPublishBook', () => {
+  it('persists an uploaded cover before sending the publish request', async () => {
+    const calls: string[] = [];
+    const savedBook: Partial<Book> = {
+      id: 'book-id', version: 4, title: 'A Story', coverUrl: 'https://images.example.test/cover.jpg', contentStatus: 'VALID',
+    };
+    const client = {
+      patch: vi.fn(async (path: string, body: unknown) => {
+        calls.push(`PATCH ${path}`);
+        expect(body).toMatchObject({ coverUploadRef: 'cover-upload' });
+        return savedBook;
+      }),
+      post: vi.fn(async (path: string) => {
+        calls.push(`POST ${path}`);
+        return { status: 'COMPLETED' };
+      }),
+    };
+
+    const result = await saveThenPublishBook(client, 'book-id', {
+      ...savedBook,
+      coverUrl: 'blob:https://admin.example.test/local-cover',
+      coverUploadRef: 'cover-upload',
+    }, true);
+
+    expect(result).toBe(savedBook);
+    expect(calls).toEqual([
+      'PATCH /admin/books/book-id',
+      'POST /admin/books/book-id/publish',
+    ]);
   });
 });
