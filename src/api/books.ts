@@ -1,5 +1,24 @@
 import type { Book } from '../types';
 
+const bookStatuses = new Set(['DRAFT', 'UPCOMING', 'PUBLISHED', 'ARCHIVED']);
+
+export const bookListStatusFromSearch = (search: string) => {
+  const value = new URLSearchParams(search).get('status') || '';
+  return bookStatuses.has(value) ? value as Book['status'] : '';
+};
+
+export const bookNeedsProcessingPoll = (books: Array<Pick<Book, 'contentStatus'>>) => books.some(book => book.contentStatus === 'PROCESSING');
+
+export const toCreateBookInput = (book: Partial<Book>) => ({
+  title: (book.title || '').trim(),
+  contentUploadRef: book.contentUploadRef || '',
+  ...(book.coverUploadRef ? { coverUploadRef: book.coverUploadRef } : {}),
+  ...(book.shortDescription?.trim() ? { shortDescription: book.shortDescription.trim() } : {}),
+  ...(book.publicationMonth ? { publicationMonth: book.publicationMonth } : {}),
+  ...(book.publicationYear ? { publicationYear: book.publicationYear } : {}),
+  ...(book.youtubeAsset?.songName.trim() && book.youtubeAsset.youtubeUrl.trim() ? { youtubeAsset: { songName: book.youtubeAsset.songName.trim(), youtubeUrl: book.youtubeAsset.youtubeUrl.trim() } } : {}),
+});
+
 export interface BookPublicationClient {
   patch: (path: string, body: unknown) => Promise<Partial<Book>>;
   post: (path: string) => Promise<unknown>;
@@ -37,7 +56,6 @@ export async function saveThenPublishBook(
     ? await client.patch(`/admin/books/${bookId}`, toAdminBookInput(book))
     : book;
 
-  if (!persisted.coverUrl) throw new Error('Upload a book cover before publishing.');
   if (persisted.contentStatus !== 'VALID') throw new Error('Wait for EPUB processing to finish before publishing.');
 
   await client.post(`/admin/books/${bookId}/publish`);

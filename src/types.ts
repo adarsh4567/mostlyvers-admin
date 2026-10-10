@@ -1,6 +1,12 @@
 export type Money = { amountMinor: number; currency: 'INR' | string };
 export type BookStatus = 'DRAFT' | 'UPCOMING' | 'PUBLISHED' | 'ARCHIVED';
 export type CatalogStatus = 'NOT_CONFIGURED' | 'SYNCING' | 'ACTIVE' | 'FAILED';
+export type ContentStatus = 'MISSING' | 'PROCESSING' | 'VALID' | 'FAILED';
+
+export interface AdminBookActions {
+  canEdit: boolean; canPublish: boolean; canArchive: boolean; canDelete: boolean;
+  publishBlockedReason?: string; deleteBlockedReason?: string;
+}
 
 export interface Owner {
   id: string; name: string; email: string; phone: string; profilePictureUrl?: string;
@@ -14,7 +20,8 @@ export interface AdminSession {
 export interface Book {
   id: string; version: number; title: string; shortDescription: string; coverUrl: string;
   publicationMonth: number; publicationYear: number; price: Money; status: BookStatus;
-  purchaseCount: number; revenue: Money; contentFileName?: string; contentStatus: 'MISSING' | 'PROCESSING' | 'VALID';
+  purchaseCount: number; revenue: Money; contentFileName?: string; contentStatus: ContentStatus;
+  contentProgress?: number; contentErrorCode?: string; actions: AdminBookActions;
   youtubeAsset?: { songName: string; youtubeUrl: string; qrStatus: 'ACTIVE' | 'PENDING' | 'FAILED' };
   prebook: { enabled: boolean; discountPercent: number; count: number };
   catalogStatus: CatalogStatus; createdAt: string; updatedAt: string;
@@ -56,4 +63,5 @@ export interface CursorPage<T> { items: T[]; nextCursor?: string | null; total?:
 export interface ApiErrorBody { error: { code: string; message: string; requestId: string; details?: Record<string, unknown> } }
 
 export const money = (value?: Money) => value ? new Intl.NumberFormat('en-IN', { style: 'currency', currency: value.currency, maximumFractionDigits: value.amountMinor % 100 ? 2 : 0 }).format(value.amountMinor / 100) : '—';
+export const bookPrice = (value?: Money) => value?.amountMinor === 0 ? 'Free' : money(value);
 export const monthYear = (month: number, year: number) => new Intl.DateTimeFormat('en-IN', { month: 'short', year: 'numeric' }).format(new Date(Date.UTC(year, month - 1, 1)));
